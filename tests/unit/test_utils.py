@@ -1,5 +1,4 @@
 """Tests unitaires pour le module utils.py"""
-import pytest
 from app.utils import doThing, GLOBAL
 
 
