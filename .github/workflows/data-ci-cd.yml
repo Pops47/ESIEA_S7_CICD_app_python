@@ -145,7 +145,7 @@ jobs:
   # 5. DÉPLOIEMENT 
   # =====================================================
   deploy:
-    name: Déploiement progressif (staging → prod)
+    name: Déploiement 
 
     # Le déploiement ne se fait que si tous les tests ont réussi
     needs: performance-tests
@@ -171,7 +171,8 @@ jobs:
       
       - name: Set Docker image tag (lowercase)
         run: |
-          IMAGE_NAME="ghcr.io/${{ github.repository }}/app-python:latest"
+          # Utiliser github.actor (compte personnel) au lieu de github.repository (peut être une org)
+          IMAGE_NAME="ghcr.io/${{ github.actor }}/app-python:latest"
           IMAGE_NAME_LOWER=$(echo "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
           echo "IMAGE_TAG=$IMAGE_NAME_LOWER" >> $GITHUB_ENV
           echo "Image tag set to: $IMAGE_NAME_LOWER"
