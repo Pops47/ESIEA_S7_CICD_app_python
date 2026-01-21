@@ -169,20 +169,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Set Docker image tag
-        run: |
-          IMAGE_NAME="ghcr.io/${{ github.repository }}/app-python:latest"
-          IMAGE_NAME_LOWER=$(echo "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
-          echo "IMAGE_TAG=$IMAGE_NAME_LOWER" >> $GITHUB_ENV
-          echo "Image tag set to: $IMAGE_NAME_LOWER"
-      
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: ./app
           file: ./app/Dockerfile
           push: true
-          tags: ${{ env.IMAGE_TAG }}
+          tags: ghcr.io/${{ github.repository }}/app-python:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
@@ -226,7 +219,7 @@ jobs:
       
       - name: Fix deployments to use secrets and Docker image
         env:
-          DOCKER_IMAGE: ${{ env.IMAGE_TAG }}
+          DOCKER_IMAGE: ghcr.io/${{ github.repository }}/app-python:latest
         run: |
           # Installer PyYAML pour modifier les YAML
           pip3 install pyyaml --quiet
