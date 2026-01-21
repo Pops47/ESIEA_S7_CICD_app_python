@@ -159,6 +159,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app
+          file: ./app/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}/app-python:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
       - name: Generate secrets YAML from GitHub Secrets
         env:
           APP_DB_PATH: ${{ secrets.APP_DB_PATH }}
@@ -197,16 +217,24 @@ jobs:
         run: |
           kompose convert -f docker-compose.yml -o PaulineSoubrieAppPython/
       
-      - name: Fix deployments to use secrets
+      - name: Fix deployments to use secrets and Docker image
+        env:
+          DOCKER_IMAGE: ghcr.io/${{ github.repository }}/app-python:latest
         run: |
           # Installer PyYAML pour modifier les YAML
           pip3 install pyyaml --quiet
           
           # Script Python pour corriger les déploiements
-          python3 <<'PYEOF'
+          python3 <<PYEOF
           import yaml
           import sys
           import glob
+          import os
+          
+          # Image Docker à utiliser
+          docker_image = os.environ.get('DOCKER_IMAGE')
+          if not docker_image:
+              raise ValueError("DOCKER_IMAGE environment variable is not set")
           
           # Trouver le fichier de déploiement de l'app
           deployment_files = glob.glob('PaulineSoubrieAppPython/*-deployment.yaml')
@@ -217,6 +245,11 @@ jobs:
                       doc = yaml.safe_load(f)
                   
                   container = doc['spec']['template']['spec']['containers'][0]
+                  
+                  # Mettre à jour l'image Docker
+                  container['image'] = docker_image
+                  print(f"✅ Image mise à jour vers {docker_image}")
+                  
                   env_vars = container.get('env', [])
                   
                   # Mapping des variables aux secrets
@@ -247,12 +280,12 @@ jobs:
                   with open(deployment_file, 'w') as f:
                       yaml.dump(doc, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
                   
-                  print(f"✅ Déploiement {deployment_file} corrigé pour utiliser les secrets")
+                  print(f"✅ Déploiement {deployment_file} corrigé pour utiliser les secrets et l'image Docker")
               except Exception as e:
                   print(f"⚠️ Erreur lors du traitement de {deployment_file}: {e}")
                   pass
           
-          print("✅ Déploiements corrigés pour utiliser les secrets")
+          print("✅ Déploiements corrigés pour utiliser les secrets et l'image Docker")
           PYEOF
       
       - name: Zip Kubernetes YAML files and README
