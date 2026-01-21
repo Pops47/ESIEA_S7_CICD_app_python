@@ -14,8 +14,11 @@ def create_app() -> Flask:
     def create_user():
         payload = request.get_json(silent=True) or {}
         name = payload.get("name", "")
-        user_id = add_user(str(name))
-        return jsonify(id=user_id), 201
+        try:
+            user_id = add_user(str(name))
+            return jsonify(id=user_id), 201
+        except ValueError as e:
+            return jsonify(error=str(e)), 400
 
     @app.get("/users/<int:user_id>")
     def read_user(user_id: int):

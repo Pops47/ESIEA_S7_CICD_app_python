@@ -58,16 +58,19 @@ class TestAPI:
         """Test de création d'un utilisateur avec un nom vide"""
         response = client.post('/users', json={'name': ''})
         
-        # Devrait retourner une erreur 500 car add_user lève une ValueError
-        assert response.status_code == 500
+        # Devrait retourner une erreur 400 car add_user lève une ValueError
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'error' in data
     
     def test_create_user_no_json(self, client):
         """Test de création d'un utilisateur sans JSON"""
         response = client.post('/users')
         
-        # Devrait quand même créer un utilisateur avec un nom vide
-        # ce qui causera une erreur 500
-        assert response.status_code == 500
+        # Devrait retourner une erreur 400 car le nom sera vide
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'error' in data
     
     def test_get_user(self, client):
         """Test de récupération d'un utilisateur"""
